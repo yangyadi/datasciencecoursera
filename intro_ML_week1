@@ -1,0 +1,536 @@
+### Grading
+The final score that you will receive for your programming assignment is generated in relation to the total points set in your programming assignment item—not the total point value in the nbgrader notebook.<br>
+When calculating the final score shown to learners, the programming assignment takes the percentage of earned points vs. the total points provided by nbgrader and returns a score matching the equivalent percentage of the point value for the programming assignment. <br>
+**DO NOT CHANGE VARIABLE OR METHOD SIGNATURES** The autograder will not work properly if your change the variable or method signatures. 
+
+### WARNING
+Please refrain from using **print statements/anything that dumps large outputs(>1000 lines) to STDOUT** to avoid running to into **memory issues**. 
+Doing so requires your entire lab to be reset which may also result in loss of progress and you will be required to reach out to Coursera for assistance with this.
+This process usually takes time causing delays to your submission.
+
+### Validate Button
+Please note that this assignment uses nbgrader to facilitate grading. You will see a **validate button** at the top of your Jupyter notebook. If you hit this button, it will run tests cases for the lab that aren't hidden. It is good to use the validate button before submitting the lab. Do know that the labs in the course contain hidden test cases. The validate button will not let you know whether these test cases pass. After submitting your lab, you can see more information about these hidden test cases in the Grader Output. <br>
+***Cells with longer execution times will cause the validate button to time out and freeze. Please know that if you run into Validate time-outs, it will not affect the final submission grading.*** <br>
+
+# Part 1. Data cleaning and Exploratory Data Analysis (EDA)
+
+This part will practice data cleaning and Exploratory Data Analysis (EDA) using a house price dataset and mpg dataset.<br>
+The first dataset is from a Kaggle competition (https://www.kaggle.com/c/house-prices-advanced-regression-techniques/overview), where the task is to predict a house sale price given house features.
+
+!ls
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+
+## 1. Import data and visually inspect the table [9 pts]
+### 1a) Data import and basic inspection. [5 pts]
+We can import the csv data using `pd.read_csv()` function. We can use `df.head()` and `df.tail()` to show the first and last 5 entries. `df.iloc[[3,5,7]]` shows the entries corresponding to the index 3,5,7. 
+What is the maximum value of the feature `MSSubClass` among the last 10 entries? Update the value of `maxval` to the correct integer value.
+
+df = pd.read_csv('data/house_data.csv') #it is the same data as the kaggle competition's train.csv.
+# your code here
+df.head()
+df.tail(10)
+
+# uncomment maxval and update the correct integer value
+maxval = 180
+
+# this cell tests that you correctly updated maxval
+
+### 1b) df.info() gives the overview of the data frame. Inspect the data using df.info() and answer below questions. [4 pts]
+#### 1b-i) Which column is the target? 
+#### 1b-ii) How many features are in the data? Exclude the target. (Id is not a useful feature, but let's still include)
+#### 1b-iii) How many observations (samples) are in the data? 
+#### 1b-iv) How many features have null values based on the data overview?
+
+# your code here
+
+df.info()
+
+# uncomment and update to the correct string value
+# copy directly from the uneditd df column name (e.g., 'LandContour')
+ANS_1b1 = 'SalePrice' 
+# uncomment and update to the correct integer value
+ANS_1b2 = 80 
+# uncomment and update to the correct integer value
+ANS_1b3 = 1460 
+# uncomment and update to the correct integer value 
+ANS_1b4 = 19 
+
+# this cell will test your solutions to the four questions above
+
+## 2. Inspect Null values [16 pts]
+The empty values in the data are called null values. Null values can take different forms.
+Have a look at below example. `np.nan` and `None` are native null values in python. They get displayed differently in the pandas dataframe (`pd.DataFrame`) though. But there are other data types such as empty list, empty dictionary, etc and string values that literally says "null" or that are empty spaces.
+Depending on how messy the data is, sometimes the table may have null values of one or more kinds, and those can be cleaned manually or automatically if you can write a code to include all possible cases which meanings are null values. 
+
+a = [np.nan, None, [], {}, 'NaN', 'Null','NULL','None','NA','?','-', '.','', ' ', '   ']
+nulldemo = pd.DataFrame(a)
+nulldemo
+
+`.isnull()` method applied to pandas dataframe or series can detect null values. `.dropna()` method in pandas will detect null values and can be specified to drop either rows or columns that contain null values. Below shows that `.isnull()` only detects the python-native null values and cannot detect other forms (string value) of variables that meant null.
+
+nulldemo.isnull()
+
+Also, sometimes the python-native null values can have an odd data type such as numpy float. 
+
+print(df['MasVnrArea'].iloc[234], df['MasVnrArea'].iloc[234].dtype, type(df['MasVnrArea'].iloc[234]))
+print(df['MasVnrArea'].isnull().iloc[234])
+print(np.isnan(df['MasVnrArea'].iloc[234])) 
+print(math.isnan(df['MasVnrArea'].iloc[234]))
+print(df['MasVnrArea'].iloc[234]==np.nan)
+print(df['MasVnrArea'].iloc[234]==np.float64(np.nan))
+
+np.isnan() and math.isnan() can detect the nan values with numpy float type, but they will cause errors with native `None` or a string value. Uncomment one of below (one at a time) and run. You'll see error messages.
+
+# your code here
+
+
+print(np.isnan(None))
+print(np.isnan('None'))
+print(math.isnan(None))
+print(math.isnan('None'))
+
+### 2a) Check null values type [5 pts]
+Let's check if our data has clean null values (one kind) or messy null values (multiple different representations). Run the codes below and visually inspect the printed results. Which column has string-typed null/none values and how many elements are string-typed null/none values?
+
+# prints number of null values detected by .isnull() and string none
+for c in df.columns:
+    string_null = np.array([x in a[2:] for x in df[c]])
+    print(c, df[c].isnull().sum(), string_null.sum()) 
+
+Which column has string-typed null/none values? 
+
+# your code here
+
+# uncomment and update to the correct string value
+col = 'MasVnrType'
+
+How many elements are string-typed null/none values?
+
+# your code here
+
+# uncomment and update to the correct string value
+string_null_count = 864
+
+# this cell will test your answer about the column with string-typed null/none values
+# and the number of string-typed null/none values
+
+### 2b) Inspect observations (rows) with null values. How many observations have at least one missing value? [5 pts]
+
+# your code here
+
+print(df.isna().any(axis=1)[lambda x: x])
+
+
+# uncomment and update to the correct integer value
+rows_with_nulls = 1460
+
+# this cell will test your answer about the number of rows with null values
+
+### 2c) Make a histogram of null counts [6 pts]
++ The ***histogram x-axis*** is the null value count range. Please use bins with width = 50 (e.g. bins are [0,50,100, ...,1550])
++ The ***histogram y-axis*** is the count of features with the number of null values within the histogram bin range. For example, if 10 feature columns have numbers of null values between 0 and 50, then the first box's y-value is 10 in the plot. <br>
+
+**Hint**: matplotlib library has a function .hist that can plot histograms
+
+# your code here
+
+# Hint: Use .isnull() and sum over True values on columns.
+# You can make it as short as 2-3 lines of code
+
+null_counts_full = df.isnull().sum()
+print(null_counts_full)
+
+null_counts = pd.Series(null_counts_full[null_counts_full != 0])
+print(null_counts)
+
+# Hint: Obtain null_counts of features and ONLY retain features that have atleast 1 null count i.e features with 
+# zero null count should not be included in the list. 
+
+# Please uncomment and update
+# do not change the names of the variables from null_counts and histogram
+
+histogram = plt.hist(null_counts, bins = 50, range = (0, 1550))
+# plt.hist(null_counts, bins = 50, range = (0, 1550)) # replace the histogram to be the plt.hist() object. 
+
+
+# Test; basic histogram tests
+assert(len(histogram[0])==30), "Check null_counts, make sure features with zero null values are not included"
+assert(len(histogram[1])==31), "X-axis is null value count range [0...1500], bin width 50"
+
+# hidden test 1; tests null_counts
+
+
+# hidden test 2; tests histogram
+
+## 3. Imputing missing values [33 pts]
+
+In this part, we will decide methods to clean the data with missing values.    
+
+Complete case analysis (CCA) is to drop any observations (rows) that have null values. It is suitable if the number of observations with null values are very small (say, less than 5%) compared to the total number of observations.  
+
+If the data has a large number of features (columns) and the model(s) does not need that many features (some models work better with less number of features), we can consider dropping features that have many missing values. Before dropping features, it is generally a good idea checking whether the feature with missing values is important feature or not (which may need the analyst's judgement). If the feature is very important for the prediction task (for example, a house size when predicting house price) but has a large amount of missing values, we cannot simply drop the feature, or in a rare case, it could mean that the data is not suitable for the analysis. One will have to work with only the observations that has values on that feature given the number of observations is sufficient, or collect more data. If we know that those features are not very important and have a large number of missing values, we can drop the features. As a rule of thumb, features with missing values more than either 5% or 10% can be dropped.
+
+### 3a) Is the data suitable for complete case analysis or not? [5 pts]
+
+# your code here
+df5 = df.loc[:, df.isin([' ','NULL',0]).mean() < .05]
+print(df5)
+df10 = df.loc[:, df.isin([' ','NULL',0]).mean() < .1]
+print(df10)
+# uncomment and update to string 'no' or 'yes'
+suitable_cca = 'no'
+
+# tests solution for whether data is suitable for CCA
+
+
+
+### 3b) Dropping feature columns [20 pts]
+**Imputation** is the process of replacing missing data with substituted values. Let's assume we want to keep columns where 5% or less of the values are null (***keep and impute***) and discard any column where more than 5% of the values are null (***throw***). Treat the string type "None" as a category and not a null value.
+
+#### 3b-i) According to above condition (5% threshold), how many features can be kept and imputed? [5 pts]
+#### 3b-ii) Which columns have null values 5% or less of total, so we can impute? [5 pts] 
+#### 3b-iii) Which columns have null vaues more than 5% of total, so we should throw? [5 pts]
+
+# your code here
+
+imputation = 69
+print(df.apply(lambda colomn: colomn.astype(str).str.contains('None').any()))
+
+# 3b-i Hint: In the previous question 2c we calculated null_counts of all the features. We can split that into 2
+# lists i.e features_to_impute and features_to_throw. 
+# features_to_impute will contain features/columns that have null values <= 5% of the total number of rows.
+# df55 = df.loc[:, df.isin([' ','NULL',0]).mean() <= .05]
+# column_headers = list(df55.columns.values)
+# print("The Column Header :", column_headers)
+# features_to_throw will contain features/columns that have null values > 5%
+
+# Complete the codes below by uncommenting and changing the values of features_to_impute and features_to_throw. 
+# Each should be a list of feature names (e.g. ['LotFrontage','Alley',...]). Do not change the variable names. 
+# There are hidden tests which will grade above three questions.
+
+# null_percentage = df.isnull().sum()/df.shape[0]*100
+# print(null_percentage)
+# col_to_drop = null_percentage[null_percentage>5].keys()
+# col_to_keep = null_percentage[null_percentage<=5].keys()
+# print(col_to_drop)
+# print(col_to_keep)
+
+#df55 = df.loc[:, df.isin([' ','NULL',0]).mean() <= .05]
+#column_headers = list(df55.columns.values)
+#print("The Column Header :", column_headers)
+
+features_to_impute = ['MSSubClass', 'MSZoning', 'LotArea', 'Street', 'LotShape', 'LandContour', 'Utilities', 'LotConfig', 'LandSlope', 'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 'HouseStyle', 'OverallQual', 'OverallCond', 'YearBuilt', 'YearRemodAdd', 'RoofStyle', 'RoofMatl', 'Exterior1st', 'Exterior2nd', 'MasVnrType', 'ExterQual', 'ExterCond', 'Foundation', 'BsmtQual', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'TotalBsmtSF', 'Heating', 'HeatingQC', 'CentralAir', 'Electrical', '1stFlrSF', 'GrLivArea', 'FullBath', 'BedroomAbvGr', 'KitchenAbvGr', 'KitchenQual', 'TotRmsAbvGrd', 'Functional', 'PavedDrive', 'MoSold', 'YrSold', 'SaleType', 'SaleCondition', 'SalePrice']
+features_to_throw = ['LotFrontage', 'Alley', 'FireplaceQu', 'GarageType', 'GarageYrBlt',
+                     'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence', 'MiscFeature']
+
+print(len(features_to_impute), features_to_impute)
+print(len(features_to_throw), features_to_throw)
+
+# Hidden test for 3b-i
+
+# Hidden test for 3b-ii
+
+# Hidden test for 3b-iii
+
+### 3b-iv) Remove the columns according to the above result. Replace the `df` with the new result. Also remove `Id` column as it's not a useful feature. [5 pts]
+
+# your code here
+df = df.drop(columns = ['Id','LotFrontage', 'Alley', 'FireplaceQu', 'GarageType', 'GarageYrBlt',
+       'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence',
+       'MiscFeature'])
+
+# remove the columns according to the above result, replace df with the new results
+# also remove ID column as it's not a useful feature
+df
+
+features_to_impute =  ['MSSubClass', 'MSZoning', 'LotArea', 'Street', 'LotShape',
+       'LandContour', 'Utilities', 'LotConfig', 'LandSlope', 'Neighborhood',
+       'Condition1', 'Condition2', 'BldgType', 'HouseStyle', 'OverallQual',
+       'OverallCond', 'YearBuilt', 'YearRemodAdd', 'RoofStyle', 'RoofMatl',
+       'Exterior1st', 'Exterior2nd', 'MasVnrType', 'MasVnrArea', 'ExterQual',
+       'ExterCond', 'Foundation', 'BsmtQual', 'BsmtCond', 'BsmtExposure',
+       'BsmtFinType1', 'BsmtFinSF1', 'BsmtFinType2', 'BsmtFinSF2', 'BsmtUnfSF',
+       'TotalBsmtSF', 'Heating', 'HeatingQC', 'CentralAir', 'Electrical',
+       '1stFlrSF', '2ndFlrSF', 'LowQualFinSF', 'GrLivArea', 'BsmtFullBath',
+       'BsmtHalfBath', 'FullBath', 'HalfBath', 'BedroomAbvGr', 'KitchenAbvGr',
+       'KitchenQual', 'TotRmsAbvGrd', 'Functional', 'Fireplaces', 'GarageCars',
+       'GarageArea', 'PavedDrive', 'WoodDeckSF', 'OpenPorchSF',
+       'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal',
+       'MoSold', 'YrSold', 'SaleType', 'SaleCondition', 'SalePrice']
+
+# tests that you properly updated df 
+
+### 3c) Impute missing data [8 pts]
+Before imputing columns, we need to think about what methods to use to impute columns.
+The imputation strategy can be different depending on the variable types and variable value distribution. There are many imputation techniques, but let's use a few simple ones.    
+
+For a numerical variable imputation, we impute mean value if the distribution is symmetric while we use median value to impute when the distribution is skewed. Another method is to assign an arbitrary value that's outside the normal range. Though it can be useful to capture missingness, but it can create outliers. Both mean/median and arbitrary imputation methods are simple to use and suitable when missing values are 5% (no more than 10%) as a rule of thumb. Both methods can distort the original distribution.
+
+For a categorical variable imputation, we can impute with the most frequent categorical value. It is a simple method but it can distort the original distribution. 
+It is also possible to create a "missing" category to capture missingness. The advantage of using missing category is that it captures missingness but its disadvantage is that it creates another rare category. 
+
+Below code shows histograms of feature columns that we can impute.
+
+for c in features_to_impute:
+    df[c].hist()
+    plt.title(c)
+    plt.show()
+
+### 3c-i) Impute missing data for features in `features_to_impute`. Choose an appropriate method among mean or median imputation methods for numerical variable(s) and frequentest value imputation for categorical variable(s). [8 pts]
+You can inspect variable types by eyes, or use below code as a help. Replace those columns with imputed values. Do not change the column name or the data frame name. Do not add new columns to the data frame.     
+Hint: You can use .mode() function to find the most frequent value in a Series.    
+Hint: You may use .fillna() function on each feature Series.
+
+for c in features_to_impute:
+    print(c, len(df[c].unique()), df[c].dtype)
+
+# your code here
+df = df.fillna(df.median())
+col_string = df.select_dtypes('object')
+col_string
+# use this cell for potential debugging
+
+# impute missing data 
+# your code here
+column_headers = list(col_string.columns.values)
+print("The Column Header :", column_headers)
+
+for c in ['MSZoning', 'Street', 'LotShape', 'LandContour', 'Utilities', 'LotConfig', 'LandSlope', 'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 'Exterior2nd', 'MasVnrType', 'ExterQual', 'ExterCond', 'Foundation', 'BsmtQual', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'Heating', 'HeatingQC', 'CentralAir', 'Electrical', 'KitchenQual', 'Functional', 'PavedDrive', 'SaleType', 'SaleCondition']:
+      df[c] = df[c].fillna(df[c].mode()[0])
+df
+
+# Sample Tests features_to_impute
+for c in features_to_impute:
+    assert df[c].isnull().sum()==0, f"Feature: '{c}' still has null values"
+
+# tests 'MasVnrType' and 'MasVnrArea'
+
+
+# tsts 'BsmtQual' and 'BsmtCond'
+
+# tests 'BsmtExposure' and 'BsmtFinType1'
+
+
+# tests 'BsmtFinType2' and 'Electrical'
+
+# Part 2. EDA, Simple Linear Regression
+
+In this part, we will use a simplified data and create a simple linear regression model. The dataset can be downloaded from https://www.kaggle.com/harlfoxem/housesalesprediction/download.    
+This dataset contains house sale prices for Kings County, which includes Seattle. It includes homes sold between May 2014 and May 2015. There are several versions of the data. Some additional information about the columns is available here: https://geodacenter.github.io/data-and-lab/KingCounty-HouseSales2015/, some of which are copied below.
+
+|Variable |	Description|
+|:---------|:-------------|
+|id 	|Identification|
+|date |	Date sold|
+|price |	Sale price|
+|bedrooms |	Number of bedrooms|
+|bathrooms |	Number of bathrooms|
+|sqft_liv |	Size of living area in square feet|
+|sqft_lot| 	Size of the lot in square feet|
+|floors |	Number of floors|
+|waterfront |	‘1’ if the property has a waterfront, ‘0’ if not.|
+|view |	An index from 0 to 4 of how good the view of the property was|
+|condition |	Condition of the house, ranked from 1 to 5|
+|grade |	Classification by construction quality which refers to the types of materials used and the quality of workmanship. Buildings of better quality (higher grade) cost more to build per unit of measure and command higher value.|
+|sqft_above |	Square feet above ground|
+|sqft_basmt |	Square feet below ground|
+|yr_built 	|Year built|
+|yr_renov |	Year renovated. ‘0’ if never renovated|
+|zipcode |	5 digit zip code|
+|lat 	|Latitude|
+|long 	|Longitude|
+|squft_liv15 |	Average size of interior housing living space for the closest 15 houses, in square feet|
+|squft_lot15 |	Average size of land lost for the closest 15 houses, in square feet|
+
+import scipy as sp
+import scipy.stats as stats
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import copy
+# Set color map to have light blue background
+sns.set()
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
+%matplotlib inline
+
+df2 = pd.read_csv('data/house_data_washington.csv')
+
+## 4. Munging data [15 pts]
+### 4a) Date string to numbers [5 pts]
+Inspect the data frame and data type of each column. The column 'date' is the date sold, and has string value. We will extract year and month information from the string. 
+In the data frame df2, create new features 'sales_year' and 'sales_month'.
+
+# extract year and month info from the string
+# create new features 'sales_year' and 'sales_month' in df2
+df2['sales_year'] = df2.date.apply(lambda x: int(x[:4]))
+df2['sales_month'] = df2.date.apply(lambda x: int(x[4:6]))
+print(df2.groupby('sales_month')['id'].count())
+print(df2.groupby('sales_year')['id'].count())
+
+Which month has the most number of sales?
+
+# your code here
+
+# uncomment and update string with capitalized month, e.g., 'December'
+most_sales = 'May'
+
+Which months has the least number of sales?
+
+# your code here
+
+# uncomment and update string with capitalized month, e.g., 'December'
+least_sales = 'January'
+
+# tests solutions for most_sales and least_sales
+
+df2.info()
+
+### 4b) Variable types [5 pts]
+Inspect each feature's data type and variable type. What is the best description for the variable type of following features? Update the string to 'numeric' or 'categorical'.
+
+# your code here
+
+
+# uncomment the feaures below and update the strings with 'numeric' or 'categorical'
+price = 'numeric'
+bathrooms = 'numeric'
+waterfront = 'categorical'
+grade = 'numeric'
+zipcode = 'categorical'
+sales_year = 'numeric'
+
+# tests that you selected correct variable type for the features in 4b 
+
+# this part is ungraded, but useful to run to check
+# your code here
+
+for c in df2.columns[2:]:
+    print(c, df2[c].unique())
+
+
+### 4c) Drop features [5 pts]
+Let's drop features that are unnecessary. `id` is not a meaningful feature. `date` string has been coded to `sales_month` and `sales_year`, so we can remove `date`. `zipcode` can be also removed as it's hard to include in a linear regressio model and the location info is included in the `lat` and `long`.
+Drop the features `id`, `date`, and `zipcode` and replace the df2.
+
+# drop unnecessary features, replace df2
+# your code here
+
+df2 = df2.drop(columns = ['id','date','zipcode'])
+
+# tests that you droppd the features id, date, and zipcode from df2
+
+## 5. More inspection; Correlation and pair plot [5 pts and Peer Review]
+### 5a) Get correlation matrix on the data frame. [5 pts]
+Which feature may be the best predictor of price based on the correlation? Answer as a string value (e.g. best_guess_predictor = 'price' or best_guess_predictor = 'yr_built')
+
+# your code here
+
+corr_matrix = df2.corr()
+print(corr_matrix)
+# uncomment and update best_guess_predictor with a string value
+
+best_guess_predictor = 'sqft_living'
+
+# tests the solution for best_guess_predictor
+
+### 5b) Display the correlation matrix as heat map [Peer Review]
+[`seaborn.heatmap()`](https://seaborn.pydata.org/generated/seaborn.heatmap.html) can visualize a matrix as a heatmap. Visualize the correlation matrix using seaborn.heatmap(). Play with color map, text font size, decimals, text orientation etc. If you find how to make a pretty visualization, please share in the discussion board. You will upload your correlation matrix in the Peer Review assigment for the week. <br>
+**Note:** your code for this section may cause the Validate button to time out. If you want to run the Validate button prior to submitting, you could comment out the code in this section after completing the Peer Review.
+
+# practice visualizing correlation matrix using a heatmap
+# your code here
+sns.heatmap(df2.corr())
+
+### 5c) Pair plot [Peer Review]
+Pair plot is a fast way to inspect relationships between features. Use seaborn's .pairplot() function to draw a pairplot if the first 10 columns (including price) and inspect their relationships. Set the diagonal elements to be KDE plot. You will upload your pair plot in this week's Peer Review assignment. <br>
+**Note:** your code for this section may cause the Validate button to time out. If you want to run the Validate button prior to submitting, you could comment out the code in this section after completing the Peer Review.
+
+# practice inspecting relationships between features using a pair plot. 
+# your code here
+plt.figure()
+sns.pairplot(df2, vars=["price","bedrooms","bathrooms","sqft_living","sqft_lot","floors","waterfront","view","condition","grade"], diag_kind='kde')
+plt.show()
+
+## 6. Simple linear regression [Peer Review]
+
+### 6a) Data preparation [Peer Review]
+We will split the data to train and test datasets such that the test dataset is 20% of original data.
+Use `sklearn.model_selection.train_test_split` function to split the data frame to X_train and X_test. X_train is 80% of observation randomly chosen. X_test is the rest 20%. Both X_train and X_test are `pd.DataFrame` object and include 'price' in the table. Note that the train_test_split can handle data frame as well as array.
+
+# your code here
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+X = df2
+y = df2["price"]
+
+(X_train, X_test, y_train, y_test) = train_test_split(X, y, test_size = .2, random_state = 5)
+
+print(len(X_train))
+print(len(X_test))
+
+# use sklearn.model_selecttion.train_test_split to split the data frame 
+# X_train is 80% of the observations; X_test is 20% of the observations
+# print length of X_train and X_test
+
+# Testing cell 
+assert(len(X_train) == 17290), "Check 6a, did you split properly so X_Train is 80% of the observations?"
+assert(len(X_test) == 4323), "Check 6a, did you split properly so X_test is 20% of the observations?"
+assert(type(X_train)==type(pd.DataFrame())), "Check 6a, what type of object should X_train be?"
+assert(type(X_test)==type(pd.DataFrame())), "Check 6a, what type of object should X_test be?"
+
+### 6b) Train a simple linear regression model [Peer Review]
+Use the best_guess_predictor as a single predictor and build a simple linear regression model using **`statsmodels.formula.api.ols`** function (https://www.statsmodels.org/dev/example_formulas.html)
+Print out the result summary. Train on the X_train portion. What is the adjusted R-squared value?
+
+N.B.: It recommended that you use the statsmodel library to do the regression analysis as opposed to e.g. sklearn. The sklearn library is great for advanced topics, but it's easier to get lost in a sea of details and it's not needed for these problems.
+
+# use best_guess_predictor as a single predictor
+# build a simple linear regression model, train on the X_train portion
+
+# Make sure to use the `statsmodels.formula.api.ols` function for building the model. 
+# your code here
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
+from sklearn.linear_model import LinearRegression
+
+mod = smf.ols(formula='price ~ sqft_living', data=df2)
+res = mod.fit()
+print(res.summary())
+
+adj_R2 = 0.493 #update this value according to the result
+
+### 6c) Best predictor [Peer Review]
+In question 5a, we picked a best guess predictor for price based on the correlation matrix. Now we will consider whether the best_guess_predictor that we used is still the best.<br>
+Print out a list ranking all of the predictors. Then print out a list of the top three predictors in order.<br>      
+Hint: Linear regression uses adjusted R squared as fit performance. <br>
+In this week's Peer Review, answer the following questions: What were your top three predictors? How did you order your list of predictors to select those as the top ones? Is your top predictor for this section the same as the best guess predictor you selected in question 5a? 
+
+# your code here
+from matplotlib import pyplot
+model = LinearRegression()
+
+X = df2.loc[ : , df2.columns != 'price']
+print(X)
+model.fit(X, y)
+# get importance
+importance = model.coef_
+# summarize feature importance
+for i,v in enumerate(importance):
+	print('Feature: %0d, Score: %.5f' % (i,v))
+# plot feature importance
+pyplot.bar([c for c in range(len(importance))], importance)
+pyplot.show()
+
+# uncomment and update top_three
+top_three = ['waterfront','lat','long']
+print(top_three)
+
+# instructor testing cell 
+# your code here
